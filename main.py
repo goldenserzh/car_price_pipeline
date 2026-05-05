@@ -13,7 +13,6 @@ def pulling_data():
     df = Preprocessing(data).make_preprocessing()
     return df
 
-def 
 X = df.drop('price', axis=1)
 y = df['price']
 cat_features = df.select_dtypes(['object']).columns.to_list()
