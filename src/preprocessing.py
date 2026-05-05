@@ -1,6 +1,6 @@
 import re
 import pandas as pd
-
+import numpy as np
 
 
 
@@ -17,9 +17,8 @@ class Preprocessing:
 
   MISSING_VALUES = ['-', '–', '', 'None', 'none', 'NULL', 'N/A', 'na']
 
-  def __init__(self, df:pd.DataFrame, is_linear: bool = True) -> None:
+  def __init__(self, df: pd.DataFrame) -> None:
       self.df = df
-      self.is_linear = is_linear
 
   def parse_engine(self, feature_str):
 
@@ -40,11 +39,7 @@ class Preprocessing:
 
     fuel_match = re.search(r'(Gasoline|Diesel|Electric|Petrol|Hybrid|Flex|Flex Fuel|E85|Ethanol)', feature_str, re.IGNORECASE)
     if fuel_match:
-        fuel = fuel_match.group(1).capitalize()
-        if fuel.lower() in ['Flex', 'Flex fuel', 'E85', 'Ethanol']:
-            fuel = 'Flex Fuel'
-        elif fuel.lower() == 'Petrol':
-            fuel = 'Gasoline'
+        fuel = self.FUEL_MAP.get(fuel_match.group(1).lower(), fuel_match.group(1).capitalize())
     else:
         fuel = None
     return pd.Series([power, displacement, cylinders, fuel])
@@ -83,11 +78,8 @@ class Preprocessing:
 
 
   def extract_color(self, name_feature: str):
-      base_colors = ['Black', 'White', 'Gray', 'Silver', 'Blue', 'Red',
-                'Green', 'Gold', 'Brown', 'Orange', 'Beige', 'Yellow']
-
       self.df[name_feature] = self.df[name_feature].apply(
-          lambda x: next((c for c in base_colors if c.lower() in str(x).lower()), 'Other')
+          lambda x: next((c for c in self.BASE_COLORS if c.lower() in str(x).lower()), 'Other')
       )
       return self.df
 
@@ -123,6 +115,6 @@ class Preprocessing:
     self.df['model'] = self.df['model'].str.split().str[0]
     self.df = self.extract_color('ext_col')
     self.df = self.extract_color('int_col')
-    self.df['fuel_type'] = self.df['fuel_type'].replace(['-', '–', '', 'None', 'none', 'NULL'], np.nan)
+    self.df['fuel_type'] = self.df['fuel_type'].replace(self.MISSING_VALUES, np.nan)
     self.df = self.detect_missing()
     return self.df
