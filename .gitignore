@@ -15,7 +15,8 @@ dist/
 build/
 *.egg-info/
 
-# Jupyter checkpoints
+# Jupyter
+*.ipynb
 .ipynb_checkpoints/
 
 # MLflow
