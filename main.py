@@ -5,9 +5,6 @@ import pandas as pd
 
 
 
-"""Задача: Создать аркестрацию apache airflow,
- логирование mlflow, обернуть как это как микросервис"""
-
 def pulling_data():       
     data = pd.read_csv("root to the data ->")
     df = Preprocessing(data).make_preprocessing()

@@ -6,7 +6,7 @@ from sklearn.metrics import (mean_absolute_error,
                              root_mean_squared_error)
 
 import mlflow
-
+import logging
 
 class Modeling:
 
@@ -21,9 +21,9 @@ class Modeling:
     mse = mean_squared_error(y_true, y_pred)
     rmse = root_mean_squared_error(y_true, y_pred)
 
-    print(f"mae: {mae}")
-    print(f"mse: {mse}")
-    print(f"rmse: {rmse}")
+    logging.info(f"mae: {mae}")
+    logging.info(f"mse: {mse}")
+    logging.info(f"rmse: {rmse}")
 
   def find_hyperparams(self, X_train, X_val, y_train, y_val, cat_features, n_trials: int = 10) -> None:
 
@@ -51,14 +51,14 @@ class Modeling:
     study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
 
     self.HYPERPARAMS = study.best_params
-    print(f"Best params: {self.HYPERPARAMS}")
-    print(f"Best score: {study.best_value}")
+    logging.info(f"Best params: {self.HYPERPARAMS}")
+    logging.info(f"Best score: {study.best_value}")
 
 
   def model_fit_predict(self, X_train, X_val, X_test, y_train, y_val, y_test, cat_features) -> None:
 
     if len(self.HYPERPARAMS) == 0:
-      print("Подбор гиперпараметров ещё не выполнен")
+      logging.info("Подбор гиперпараметров ещё не выполнен")
       with mlflow.start_run():
         self.model.fit(X_train, y_train, cat_features=cat_features, eval_set=(X_val, y_val), verbose=100)
         self.test_pred = self.model.predict(X_test)
