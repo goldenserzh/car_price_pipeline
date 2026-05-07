@@ -7,6 +7,8 @@ from sklearn.metrics import (mean_absolute_error,
 
 import mlflow
 import logging
+from sklearn.model_selection import train_test_split
+
 
 class Modeling:
 
@@ -25,8 +27,12 @@ class Modeling:
     logging.info(f"mse: {mse}")
     logging.info(f"rmse: {rmse}")
 
-  def find_hyperparams(self, X_train, X_val, y_train, y_val, cat_features, n_trials: int = 10) -> None:
-
+  def find_hyperparams(self, df_train, cat_features, n_trials: int = 10) -> None:
+    X = df_train.drop('price', axis=1)
+    y = df_train['price']
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.3, random_state=42)
+    
+    
     def objective(trial: optuna.Trial) -> float:
       params = {
                 'iterations':          trial.suggest_int('iterations', 500, 2000),
@@ -55,17 +61,24 @@ class Modeling:
     logging.info(f"Best score: {study.best_value}")
 
 
-  def model_fit_predict(self, X_train, X_val, X_test, y_train, y_val, y_test, cat_features) -> None:
+  def model_fit_predict(self, df_train, df_test, cat_features) -> None:
+    X = df_train.drop('price', axis=1)
+    y = df_train['price']
+    X_test = df_test.drop('price', axis=1)
+    y_test = df_test['price']
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.3, random_state=42)
 
-    if len(self.HYPERPARAMS) == 0:
+    if not self.HYPERPARAMS:
       logging.info("Подбор гиперпараметров ещё не выполнен")
-      with mlflow.start_run():
-        self.model.fit(X_train, y_train, cat_features=cat_features, eval_set=(X_val, y_val), verbose=100)
-        self.test_pred = self.model.predict(X_test)
-        self.show_metrics(self.test_pred, y_test)
     else:
       self.model = CatBoostRegressor(**self.HYPERPARAMS)
-      with mlflow.start_run():
-        self.model.fit(X_train, y_train, cat_features=cat_features, eval_set=(X_val, y_val), verbose=100)
-        self.test_pred = self.model.predict(X_test)
-        self.show_metrics(self.test_pred, y_test)
+
+    with mlflow.start_run():
+      mlflow.log_params(self.HYPERPARAMS)
+      self.model.fit(X_train, y_train, cat_features=cat_features, eval_set=(X_val, y_val), verbose=100)
+      self.test_pred = self.model.predict(X_test)
+      mae  = mean_absolute_error(y_test, self.test_pred)
+      mse  = mean_squared_error(y_test, self.test_pred)
+      rmse = root_mean_squared_error(y_test, self.test_pred)
+      mlflow.log_metrics({'mae': mae, 'mse': mse, 'rmse': rmse})
+      self.show_metrics(self.test_pred, y_test)
